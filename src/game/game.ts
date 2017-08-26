@@ -6,7 +6,8 @@ export class Game extends Engine {
 		super({
 			width: 800,
 			height: 600,
-			displayMode: DisplayMode.FullScreen
+			displayMode: DisplayMode.FullScreen,
+			canvasElementId: "mage-arena-container"
 		});
 	}
 
