@@ -1,4 +1,5 @@
 .main {
   width: 800px;
   padding: 20px;
+  min-height: 600px;
 }

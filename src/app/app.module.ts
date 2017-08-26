@@ -8,43 +8,28 @@ import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 
 import { AppComponent } from './app.component';
 import { routes } from './app.router';
-import { metaReducers, reducers } from './store';
-import { SharedModule } from './shared/shared.module';
-import { WeatherService } from './weather/weather.service';
-import { WeatherEffects } from './store/weather/weather.effects';
-import { FeedEffects } from './store/feed/feed.effects';
-import { ProfileEffects } from './store/profile/profile.effects';
 import { environment } from '../environments/environment';
 import { RouterModule } from '@angular/router';
-import {ChatService} from './services/test.service';
-import {HomeComponent} from './home/home.component';
+import { ChatService } from './services/test.service';
+import { HomeComponent } from './components/home/home.component';
+import { MageArenaComponent } from './components/mage-arena/mage-arena.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-    HomeComponent
+    HomeComponent,
+    MageArenaComponent
   ],
   imports: [
     BrowserModule,
-    SharedModule,
     FormsModule,
     HttpModule,
-    StoreModule.forRoot(reducers, { metaReducers }),
-    EffectsModule.forRoot([
-      ProfileEffects,
-      FeedEffects,
-      WeatherEffects
-    ]),
     !environment.production ? StoreDevtoolsModule.instrument({ maxAge: 50 }) : [],
     RouterModule.forRoot(
-      routes,
-      {
-        useHash: true
-      }
+      routes
     )
   ],
   providers: [
-    WeatherService,
     ChatService
   ],
   bootstrap: [
