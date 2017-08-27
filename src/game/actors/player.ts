@@ -1,4 +1,5 @@
-import { Engine, Actor, Color, Input, Vector } from 'excalibur';
+import { Engine, Actor, Color, Input, Vector } from "excalibur";
+import { ShootEvent } from "../events/shootEvent";
 
 export class Player extends Actor {
 	private static readonly SIZE: number = 40;
@@ -10,9 +11,9 @@ export class Player extends Actor {
 	}
 
 	public onInitialize(engine: Engine): void {
-		engine.input.pointers.on("down", (event: PointerEvent) => {
+		engine.input.pointers.primary.on("down", (event: PointerEvent) => {
 			if (event.button === Input.PointerButton.Left) {
-				this.shoot(event.clientX, event.clientY);
+				this.shoot(event.x, event.y);
 			}
 		});
 	}
@@ -61,6 +62,7 @@ export class Player extends Actor {
 	}
 
 	private shoot(clickX: number, clickY: number): void {
-		
+		const angle: number = new Vector(clickX, clickY).sub(new Vector(this.x, this.y)).toAngle();
+		this.emit("shoot", new ShootEvent(this, this.x, this.y, angle));
 	}
 }

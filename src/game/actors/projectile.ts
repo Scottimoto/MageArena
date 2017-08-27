@@ -1,4 +1,4 @@
-import { Engine, Actor, Color } from 'excalibur';
+import { Engine, Actor, Color, Vector } from 'excalibur';
 
 export class Projectile extends Actor {
 	private readonly speed: number;
@@ -13,7 +13,7 @@ export class Projectile extends Actor {
 		this.angle = angle;
 	}
 
-	public update(engine: Engine) {
-
+	public onInitialize(engine: Engine) {
+		this.vel = Vector.fromAngle(this.angle).normalize().scale(this.speed);
 	}
 }
