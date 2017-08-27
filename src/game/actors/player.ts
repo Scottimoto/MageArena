@@ -1,4 +1,4 @@
-import { Engine, Actor, Color, Input, Vector } from "excalibur";
+import { Engine, Actor, Color, Input, Vector, CollisionType } from "excalibur";
 import { ShootEvent } from "../events/shootEvent";
 
 export class Player extends Actor {
@@ -8,6 +8,7 @@ export class Player extends Actor {
 
 	constructor() {
 		super(-(Player.SIZE / 2), -(Player.SIZE / 2), Player.SIZE, Player.SIZE, Color.White);
+		this.collisionType = CollisionType.Active;
 	}
 
 	public onInitialize(engine: Engine): void {
