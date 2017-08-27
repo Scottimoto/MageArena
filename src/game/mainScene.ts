@@ -11,14 +11,14 @@ export class MainScene extends Scene {
 	constructor() {
 		super();
 		this.lastMonsterSpawnTime = 0;
-		this.monsterSpawnInterval = 2000;
+		this.monsterSpawnInterval = 1000;
 	}
 
 	public onInitialize(): void {
 		const player = new Player();
 		this.add(player);
 		player.on("shoot", (event: ShootEvent) => {
-			this.add(new Projectile(event.startX, event.startY, event.angle));
+			this.add(new Projectile(event.startX, event.startY, event.angle, 50));
 		});
 	}
 
@@ -43,8 +43,7 @@ export class MainScene extends Scene {
 			y = this.getRandomInFirstOrLastPercent(20, this.engine.getDrawHeight())  - this.engine.getDrawHeight() / 2;
 		}
 
-		this.add(new Monster(x, y));
-		console.log(`spawned monster at ${x}, ${y}`);
+		this.add(new Monster(x, y, 200));
 	}
 
 	private getRandomInFirstOrLastPercent(percent: number, range: number): number {

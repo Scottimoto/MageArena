@@ -4,7 +4,11 @@ import { ShootEvent } from "../events/shootEvent";
 export class Player extends Actor {
 	private static readonly SIZE: number = 40;
 
-	private readonly movementSpeed: number = 200;
+	private readonly movementSpeed: number = 300;
+
+	private readonly fireRate: number = 10;
+	private firing: boolean;
+	private lastFireTime: number;
 
 	constructor() {
 		super(-(Player.SIZE / 2), -(Player.SIZE / 2), Player.SIZE, Player.SIZE, Color.White);
@@ -14,13 +18,27 @@ export class Player extends Actor {
 	public onInitialize(engine: Engine): void {
 		engine.input.pointers.primary.on("down", (event: PointerEvent) => {
 			if (event.button === Input.PointerButton.Left) {
-				this.shoot(event.x, event.y);
+				this.firing = true;
 			}
 		});
+		engine.input.pointers.primary.on("up", (event: PointerEvent) => {
+			if (event.button === Input.PointerButton.Left) {
+				this.firing = false;
+			}
+		});
+
+		this.lastFireTime = 0;
+		this.firing = false;
 	}
 
 	public update(engine: Engine, delta: number): void {
 		this.HandleMovement(engine.input);
+		const currentTime = Date.now();
+		if (this.firing && currentTime - this.lastFireTime > 1000 / this.fireRate) {
+			const pointerPosition = engine.input.pointers.primary.lastWorldPos;
+			this.shoot(pointerPosition.x, pointerPosition.y);
+			this.lastFireTime = currentTime
+		}
 
 		super.update(engine, delta);
 	}
@@ -62,8 +80,8 @@ export class Player extends Actor {
 		this.vel = this.vel.add(new Vector(0, this.movementSpeed));
 	}
 
-	private shoot(clickX: number, clickY: number): void {
-		const angle: number = new Vector(clickX, clickY).sub(new Vector(this.x, this.y)).toAngle();
+	private shoot(atX: number, atY: number): void {
+		const angle: number = new Vector(atX, atY).sub(new Vector(this.x, this.y)).toAngle();
 		this.emit("shoot", new ShootEvent(this, this.x, this.y, angle));
 	}
 }
