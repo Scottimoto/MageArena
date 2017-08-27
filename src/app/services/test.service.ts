@@ -8,11 +8,15 @@ export class ChatService {
   private url = 'http://localhost:4300';  
   private socket;
 
-  constructor() {this.socket = io(this.url);}
+
+
+  constructor() {
+    this.socket = io(this.url);
+  }
   
   sendMessage(message){
     let observable = new Observable(observer => {
-        this.socket = io(this.url);
+        // this.socket = io(this.url);
         this.socket.on('message', (data) => {
           observer.next(data);    
         });

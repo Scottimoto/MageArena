@@ -8,6 +8,8 @@ import * as http from "http";
 import { app } from "../app";
 import { serverPort } from "../config";
 import * as socketIo from "socket.io";
+import { Position, Player, ClientPlayer } from "../models/game-sync-models";
+import { Color } from 'excalibur';
 
 /**
  * Get port from environment and store in Express.
@@ -35,17 +37,97 @@ server.on("listening", onListening);
 
 
 
-io.on('connect', (socket: any) => {
+var startingPositions: Position[] = [{x: -100, y: 0}, {x: 100, y: 0}, {x: 0, y: -100},{x: 0, y: 100}];
+var startingColors: Color[] = [Color.Red, Color.Blue, Color.Green, Color.Yellow];
+
+io.on('connect', (socket: SocketIO.Socket | any) => {
+  // allClients[socket.id].socket = socket;
   // console.log('Connected client on port %s.', this.port);
-  socket.on('message', (m: string) => {
-    console.log('[server](message): %s', JSON.stringify(m));
-    io.emit('message', m + " added!");
+  socket.on('newplayer', () => {
+    if (getAllPlayers().length == 4) {
+      socket.emit('newplayer', null);
+      socket.disconnect();
+    }
+    io.sockets.connected[socket.id].player = createPlayer(socket);
+    // console.log('[server](message): %s', JSON.stringify(m));
+    socket.emit('newplayer', socket.player);
+    socket.emit("player-joined", getAllEnemyPlayers(socket));
+    socket.broadcast.emit("player-joined", [socket.player]);
+    console.log("Player Joined: " + socket.id + ", Players Remaining: " + getAllPlayers().length);
+  });
+
+  
+
+  socket.on('click', () => {
+    // console.log('[server](message): %s', JSON.stringify(m));
+    // socket.emit('newplayer', "Your Player ID: " + newPlayerID);
+    socket.broadcast.emit("click");
+    // newPlayerID++;
   });
 
   socket.on('disconnect', () => {
-    console.log('Client disconnected');
+    // delete allClients[socket.id];
+    io.emit('player-left', socket.id);
+    console.log("Player Left: " + socket.id + ", Players Remaining: " + getAllPlayers().length);
   });
 });
+
+function getAllEnemyPlayers(socket: SocketIO.Socket){
+  var players = [];
+  Object.keys(io.sockets.connected).forEach(function(socketID){
+      var player = io.sockets.connected[socketID].player;
+      if(player && player.id != socket.id) players.push(player);
+  });
+  return players;
+}
+
+function getAllPlayers(){
+  var players = [];
+  Object.keys(io.sockets.connected).forEach(function(socketID){
+      var player = io.sockets.connected[socketID].player;
+      if(player) players.push(player);
+  });
+  return players;
+}
+
+function createPlayer(socket: SocketIO.Socket): ClientPlayer {
+  var newPlayer: ClientPlayer = {
+    id: socket.id,
+    order: Object.keys(io.sockets.connected).length,
+    health: 100,
+    position: startingPositions[getAllPlayers().length],
+    color: startingColors[getAllPlayers().length]
+  };
+  return newPlayer;
+}
+
+
+// server.lastPlayderID = 0; // Keep track of the last id assigned to a new player
+
+// io.on('connection',function(socket){
+//     socket.on('newplayer',function(){
+//         socket.player = {
+//             id: server.lastPlayderID++,
+//             x: randomInt(100,400),
+//             y: randomInt(100,400)
+//         };
+//         socket.emit('allplayers',getAllPlayers());
+//         socket.broadcast.emit('newplayer',socket.player);
+//     });
+// });
+
+// function getAllPlayers(){
+//     var players = [];
+//     Object.keys(io.sockets.connected).forEach(function(socketID){
+//         var player = io.sockets.connected[socketID].player;
+//         if(player) players.push(player);
+//     });
+//     return players;
+// }
+
+// function randomInt (low, high) {
+//     return Math.floor(Math.random() * (high - low) + low);
+// }
 
 
 
