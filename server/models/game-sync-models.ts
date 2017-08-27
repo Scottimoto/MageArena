@@ -24,7 +24,7 @@ export interface ClientPlayer {
     health: number;
     position: Position;
     color: Color;
-    order: string;
+    order: number;
 }
 
 export interface Spell {
