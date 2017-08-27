@@ -1,55 +1,69 @@
-import { Engine, Actor, Color, Input, Vector } from 'excalibur';
+import { Engine, Actor, Color, Input, Vector, CollisionType } from "excalibur";
+import { ShootEvent } from "../events/shootEvent";
 
 export class Player extends Actor {
 	private static readonly SIZE: number = 40;
 
-	private readonly movementSpeed = 200;
+	private readonly movementSpeed: number = 200;
 
 	constructor() {
 		super(-(Player.SIZE / 2), -(Player.SIZE / 2), Player.SIZE, Player.SIZE, Color.White);
+		this.collisionType = CollisionType.Active;
 	}
 
-	public onInitialize() {
-
+	public onInitialize(engine: Engine): void {
+		engine.input.pointers.primary.on("down", (event: PointerEvent) => {
+			if (event.button === Input.PointerButton.Left) {
+				this.shoot(event.x, event.y);
+			}
+		});
 	}
 
-	public update(engine: Engine, delta: number) {
-		this.HandleMovement(engine);
+	public update(engine: Engine, delta: number): void {
+		this.HandleMovement(engine.input);
+
 		super.update(engine, delta);
 	}
 
-	private HandleMovement(engine: Engine) {
+	private HandleMovement(input: Input.IEngineInput): void {
 		this.vel.setTo(0, 0);
-		if (engine.input.keyboard.isHeld(Input.Keys.W)) {
+
+		if (input.keyboard.isHeld(Input.Keys.W)) {
 			this.moveForward();
 		}
-		if (engine.input.keyboard.isHeld(Input.Keys.A)) {
+		if (input.keyboard.isHeld(Input.Keys.A)) {
 			this.moveLeft();
 		}
-		if (engine.input.keyboard.isHeld(Input.Keys.S)) {
+		if (input.keyboard.isHeld(Input.Keys.S)) {
 			this.moveBackward();
 		}
-		if (engine.input.keyboard.isHeld(Input.Keys.D)) {
+		if (input.keyboard.isHeld(Input.Keys.D)) {
 			this.moveRight();
 		}
+
 		if (!this.vel.equals(Vector.Zero)) {
 			this.vel = this.vel.normalize().scale(this.movementSpeed);
 		}
 	}
 
-	private moveForward() {
+	private moveForward(): void {
 		this.vel = this.vel.add(new Vector(0, -this.movementSpeed));
 	}
 
-	private moveLeft() {
+	private moveLeft(): void {
 		this.vel = this.vel.add(new Vector(-this.movementSpeed, 0));
 	}
 
-	private moveRight() {
+	private moveRight(): void {
 		this.vel = this.vel.add(new Vector(this.movementSpeed, 0));
 	}
 
-	private moveBackward() {
+	private moveBackward(): void {
 		this.vel = this.vel.add(new Vector(0, this.movementSpeed));
+	}
+
+	private shoot(clickX: number, clickY: number): void {
+		const angle: number = new Vector(clickX, clickY).sub(new Vector(this.x, this.y)).toAngle();
+		this.emit("shoot", new ShootEvent(this, this.x, this.y, angle));
 	}
 }
