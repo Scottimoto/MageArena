@@ -4,14 +4,16 @@ import { ShootEvent } from "../events/shootEvent";
 export class Player extends Actor {
 	private static readonly SIZE: number = 40;
 
+	private readonly playerId: string
 	private readonly movementSpeed: number = 300;
 
 	private readonly fireRate: number = 10;
 	private firing: boolean;
 	private lastFireTime: number;
 
-	constructor() {
-		super(-(Player.SIZE / 2), -(Player.SIZE / 2), Player.SIZE, Player.SIZE, Color.White);
+	constructor(playerId: string, x: number, y: number, color: Color) {
+		super(x, y, Player.SIZE, Player.SIZE, color);
+		this.playerId = playerId;
 		this.collisionType = CollisionType.Active;
 	}
 
