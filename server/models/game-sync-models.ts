@@ -1,11 +1,10 @@
 //TODO ADD ALL GAME MODELS HERE
 
-import { Color } from 'excalibur';
+import { Color, Vector } from 'excalibur';
 
 export interface GameState {
-    players: Player[];
-
-
+    players: ClientPlayer[];
+    lastUpdated: number;
 }
 
 export interface Player {
@@ -25,6 +24,8 @@ export interface ClientPlayer {
     position: Position;
     color: Color;
     order: number;
+    velocity: Vector;
+    lastUpdated: number;
 }
 
 export interface Spell {

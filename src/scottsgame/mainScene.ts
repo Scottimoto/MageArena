@@ -1,9 +1,9 @@
-import { Scene, Actor, TileMap, Color } from 'excalibur';
+import { Scene, Actor, TileMap, Color, Label, Engine } from 'excalibur';
 import { Player } from "./actors/player";
 import { EnemyPlayer } from "./actors/enemyplayer";
 // import { Monster } from "./actors/monster";
 import { GameStateService } from './../app/services/gamestate.service';
-import { Position, ClientPlayer } from "../../server/models/game-sync-models";
+import { Position, ClientPlayer, GameState } from "../../server/models/game-sync-models";
 import * as _ from 'lodash';
 
 export class MainScene extends Scene {
@@ -14,14 +14,19 @@ export class MainScene extends Scene {
 	private player: Player;
 	private enemyPlayers: EnemyPlayer[] = [];
 
-	public onInitialize(): void {
+	public onInitialize(engine: Engine): void {
+		// engine.
+		engine.getDrawHeight();
+		// engine.screenToWorldCoordinates
+		// 25-(engine.getDrawWidth()/2), 25-(engine.getDrawHeight()/2),
+		//this.add(new Label("Hello World", 0,0, "10px Arial"));
 
 		this.gameStateService.newPlayer$.subscribe((data: ClientPlayer) => {
 			if (data == null) {
 				alert("GAME FULL!");
 				return;
 			}
-			this.player = new Player(data.playerid, data.position.x, data.position.y, new Color(data.color.r, data.color.g, data.color.b, data.color.a));
+			this.player = new Player(data.playerid, data.position.x, data.position.y, new Color(data.color.r, data.color.g, data.color.b, data.color.a), this.gameStateService);
 			this.add(this.player);
 		});
 
@@ -50,10 +55,32 @@ export class MainScene extends Scene {
 			});
 		});
 
+		this.gameStateService.gameStateSync$.subscribe((state: GameState) => {
+			console.log("SERVER SYNC RECEVIED!");
+			let allPlayers = state.players;
+			let timeNow = Date.now();
+			// let timeSinceLastUpdate = timeNow - state.lastUpdated;
+			var thisPlayer = _.filter(allPlayers, (player) => {return player.playerid == this.player.playerid; })[0];
+			if (thisPlayer) {
+				// let timeSinceLastUpdate = timeNow - thisPlayer.lastUpdated;
+				// thisPlayer.position.x = thisPlayer.position.x + (thisPlayer.velocity.x * (timeSinceLastUpdate/1000));
+				// thisPlayer.position.y = thisPlayer.position.y + (thisPlayer.velocity.y * (timeSinceLastUpdate/1000));
+				this.player.serverSync(thisPlayer.position.x, thisPlayer.position.y, thisPlayer.velocity);
+			}
+			
+			_.forEach(allPlayers, (player) => {
+				let enemyActor = _.find(this.enemyPlayers, (enemyPlayer) => {
+					return enemyPlayer.playerid == player.playerid;
+				});
+				if (enemyActor != null) {
+					// let timeSinceLastUpdate = timeNow - player.lastUpdated;
+					// player.position.x = player.position.x + (player.velocity.x * (timeSinceLastUpdate/1000));
+					// player.position.y = player.position.y + (player.velocity.y * (timeSinceLastUpdate/1000));
+					enemyActor.serverSync(player.position.x, player.position.y, player.velocity);
+				}
+			});
+		});
+
 		this.gameStateService.addPlayer();
-
-
-		// this.add(new Player(50, 500));
-		// this.add(new Monster(-200, 0));
 	}
 }

@@ -3,12 +3,14 @@ import * as io from 'socket.io-client';
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
 import { GameState, Player, ClientPlayer, Position } from './../../../server/models/game-sync-models';
+import { Engine, Actor, Color, Input, Vector } from 'excalibur';
 
 
 @Injectable()
 export class SocketioService {
 
-  private url = 'http://localhost:4300';  
+  // private url = 'http://localhost:4300';  
+  private url = 'http://192.168.0.85:4300';  
   private socket: any;
 
   private gameStateSync: Subject<GameState> = new Subject<GameState>();
@@ -55,8 +57,8 @@ export class SocketioService {
     // this.server.on("");
   }
 
-  public playerClick() {
-    this.socket.emit('click');
+  public playerMove(inputs: Input.Keys[]) {
+    this.socket.emit('move', inputs);
   }
 
   public addPlayer() {

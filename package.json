@@ -63,7 +63,8 @@
     "socket.io": "~2.0.3",
     "@types/socket.io": "~1.4.29",
     "lodash": "^4.17.4",
-    "@types/lodash": "^4.14.74"
+    "@types/lodash": "^4.14.74",
+    "@gamestdio/timeline": "^0.3.5"
   },
   "devDependencies": {
     "codelyzer": "~3.1.2",
