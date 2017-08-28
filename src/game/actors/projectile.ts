@@ -1,5 +1,5 @@
 import { Engine, Actor, Color, Vector, CollisionType, CollisionEvent } from "excalibur";
-import { Monster } from "./monster";
+import { instanceofIDamageable } from "./interfaces/IDamageable";
 
 export class Projectile extends Actor {
 	private startTime: number;
@@ -10,8 +10,9 @@ export class Projectile extends Actor {
 	private readonly range: number;
 	
 	public readonly damage: number;
+	public readonly faction: string;
 	
-	constructor(startX: number, startY: number, angle: number, damage) {
+	constructor(startX: number, startY: number, angle: number, damage: number, faction: string) {
 		const size: number = 10;
 
 		super(startX, startY, size, size, Color.Black);
@@ -21,6 +22,7 @@ export class Projectile extends Actor {
 		this.speed = 1000;
 		this.range = 800;
 		this.damage = 50;
+		this.faction = faction;
 	}
 
 	public onInitialize(engine: Engine) {
@@ -38,11 +40,13 @@ export class Projectile extends Actor {
 	}
 
 	private onCollision(e: CollisionEvent): void {
-		const projectile = e.actor as Projectile;
-		if(e.other instanceof(Monster) && projectile.actorsDamaged.indexOf(e.other.id) === -1) {
-			e.other.damage(projectile.damage);
-			projectile.actorsDamaged.push(e.other.id);
-			projectile.kill();
+		const self: Projectile = e.actor as Projectile;
+		if (instanceofIDamageable(e.other)) {
+			if(e.other.faction !== self.faction && self.actorsDamaged.indexOf(e.other.id) === -1) {
+				e.other.damage(self.damage);
+				self.actorsDamaged.push(e.other.id);
+				self.kill();
+			}
 		}
 	}
 }

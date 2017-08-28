@@ -1,8 +1,9 @@
 import { Engine, DisplayMode, Promise } from "excalibur";
 import { MainScene } from "./mainScene";
+import { GameStateService } from './../app/services/gamestate.service';
 
 export class Game extends Engine {
-	constructor() {
+	constructor(private gameStateService: GameStateService) {
 		super({
 			width: 800,
 			height: 600,
@@ -12,7 +13,7 @@ export class Game extends Engine {
 	}
 
 	public start(): Promise<any> {
-		this.add("mainScene", new MainScene());
+		this.add("mainScene", new MainScene(this.gameStateService));
 		return super.start().then(() => {
 			this.goToScene("mainScene");
 		});

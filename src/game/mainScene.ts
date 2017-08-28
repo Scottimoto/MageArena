@@ -1,60 +1,90 @@
-import { Engine, Scene, Actor } from "excalibur";
+import { Scene, Actor, TileMap, Color, Label, Engine } from 'excalibur';
 import { Player } from "./actors/player";
-import { Monster } from "./actors/monster";
+import { EnemyPlayer } from "./actors/enemyPlayer";
+import { GameStateService } from './../app/services/gamestate.service';
+import { Position, ClientPlayer, GameState } from "../../server/models/game-sync-models";
 import { Projectile } from "./actors/projectile";
 import { ShootEvent } from "./events/shootEvent";
+import * as _ from 'lodash';
 
 export class MainScene extends Scene {
-	private lastMonsterSpawnTime: number;
-	private monsterSpawnInterval: number;
-	
-	constructor() {
+	constructor(private gameStateService: GameStateService) {
 		super();
-		this.lastMonsterSpawnTime = 0;
-		this.monsterSpawnInterval = 1000;
 	}
 
-	public onInitialize(): void {
-		const player = new Player();
-		this.add(player);
-		player.on("shoot", (event: ShootEvent) => {
-			this.add(new Projectile(event.startX, event.startY, event.angle, 50));
+	private player: Player;
+	private enemyPlayers: EnemyPlayer[] = [];
+
+	public onInitialize(engine: Engine): void {
+		// engine.
+		engine.getDrawHeight();
+		// engine.screenToWorldCoordinates
+		// 25-(engine.getDrawWidth()/2), 25-(engine.getDrawHeight()/2),
+		//this.add(new Label("Hello World", 0,0, "10px Arial"));
+
+		this.gameStateService.newPlayer$.subscribe((data: ClientPlayer) => {
+			if (data == null) {
+				alert("GAME FULL!");
+				return;
+			}
+			this.player = new Player(data.playerid, data.position.x, data.position.y, new Color(data.color.r, data.color.g, data.color.b, data.color.a), this.gameStateService);
+			this.add(this.player);
+			this.player.on("shoot", (event: ShootEvent) => {
+				this.add(new Projectile(event.startX, event.startY, event.angle, 50, "player"));
+			});
 		});
-	}
 
-	public update(engine: Engine, delta: number): void {
-		const currentTime = Date.now();
-		if (currentTime - this.lastMonsterSpawnTime > this.monsterSpawnInterval) {
-			this.spawnMonster();
-			this.lastMonsterSpawnTime = currentTime;
-		}
+		this.gameStateService.playerLeft$.subscribe((id: string) =>  {
+			console.log("rmeoving player! id: " + id);
+			console.log("current enemy players");
+			_.forEach(this.enemyPlayers, (enemyPlayer)=> {console.log("Enemy Player ID: " + enemyPlayer.playerid);});
+			console.log("current enemy players END");
+			let playerThatLeft = _.find(this.enemyPlayers, {playerid : id});
 
-		super.update(engine, delta);
-	}
+			console.log("rmeoving player with id: " + playerThatLeft.playerid);
+			this.remove(playerThatLeft);
+		});
 
-	private spawnMonster(): void {
-		let x: number;
-		let y: number;
-		if (Math.random() > 0.5) {
-			x = this.getRandomInFirstOrLastPercent(20, this.engine.getDrawWidth()) - this.engine.getDrawWidth() / 2;
-			y = Math.random() * this.engine.getDrawHeight()  - this.engine.getDrawHeight() / 2;
-		} else {
-			x = Math.random() * this.engine.getDrawWidth()  - this.engine.getDrawWidth() / 2;
-			y = this.getRandomInFirstOrLastPercent(20, this.engine.getDrawHeight())  - this.engine.getDrawHeight() / 2;
-		}
+		this.gameStateService.enemyPlayerJoined$.subscribe((data: ClientPlayer[]) => {
+			console.log("enemy joined2");
+			_.forEach(data, (enemyPlayer: ClientPlayer) => {
+				console.log("enemy joinedhit");
+				if (_.find(this.enemyPlayers, { playerid: enemyPlayer.playerid }) == null) {
+					console.log("enemy joined- not found so adding" +  enemyPlayer.playerid);
+					let newEnemyPlayer = new EnemyPlayer(enemyPlayer.playerid, enemyPlayer.position.x, enemyPlayer.position.y, new Color(enemyPlayer.color.r, enemyPlayer.color.g, enemyPlayer.color.b, enemyPlayer.color.a));
+					this.enemyPlayers.push(newEnemyPlayer);
+					//this.add(this.enemyPlayers[this.enemyPlayers.length - 1]);
+					this.add(newEnemyPlayer);
+				}
+			});
+		});
 
-		this.add(new Monster(x, y, 200));
-	}
+		this.gameStateService.gameStateSync$.subscribe((state: GameState) => {
+			console.log("SERVER SYNC RECEVIED!");
+			let allPlayers = state.players;
+			let timeNow = Date.now();
+			// let timeSinceLastUpdate = timeNow - state.lastUpdated;
+			var thisPlayer = _.filter(allPlayers, (player) => {return player.playerid == this.player.playerId; })[0];
+			if (thisPlayer) {
+				// let timeSinceLastUpdate = timeNow - thisPlayer.lastUpdated;
+				// thisPlayer.position.x = thisPlayer.position.x + (thisPlayer.velocity.x * (timeSinceLastUpdate/1000));
+				// thisPlayer.position.y = thisPlayer.position.y + (thisPlayer.velocity.y * (timeSinceLastUpdate/1000));
+				this.player.serverSync(thisPlayer.position.x, thisPlayer.position.y, thisPlayer.velocity);
+			}
+			
+			_.forEach(allPlayers, (player) => {
+				let enemyActor = _.find(this.enemyPlayers, (enemyPlayer) => {
+					return enemyPlayer.playerid == player.playerid;
+				});
+				if (enemyActor != null) {
+					// let timeSinceLastUpdate = timeNow - player.lastUpdated;
+					// player.position.x = player.position.x + (player.velocity.x * (timeSinceLastUpdate/1000));
+					// player.position.y = player.position.y + (player.velocity.y * (timeSinceLastUpdate/1000));
+					enemyActor.serverSync(player.position.x, player.position.y, player.velocity);
+				}
+			});
+		});
 
-	private getRandomInFirstOrLastPercent(percent: number, range: number): number {
-		const multiplier = percent / 100;
-		const random: number = Math.random();
-		let result: number;
-		if (random < 0.5) {
-			result = 2 * random * range * multiplier;
-		} else {
-			result = (1 - multiplier) * range + 2 * (random - 0.5) * range * multiplier;
-		}
-		return result;
+		this.gameStateService.addPlayer();
 	}
 }

@@ -9,8 +9,8 @@ import { Engine, Actor, Color, Input, Vector } from 'excalibur';
 @Injectable()
 export class SocketioService {
 
-  // private url = 'http://localhost:4300';  
-  private url = 'http://192.168.0.85:4300';  
+private url = 'http://localhost:4300';  
+//   private url = 'http://192.168.0.85:4300';  
   private socket: any;
 
   private gameStateSync: Subject<GameState> = new Subject<GameState>();
