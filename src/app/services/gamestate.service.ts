@@ -35,7 +35,7 @@ export class GameStateService {
 
   public removePlayer(playerId): void {
     // this.EnemyPlayers
-    _.remove(this.EnemyPlayers, { id: playerId });
+    _.remove(this.EnemyPlayers, (enemyPlayer) => { return enemyPlayer.playerid == playerId; });
   }
 
 }

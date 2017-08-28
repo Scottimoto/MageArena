@@ -20,7 +20,7 @@ export interface Player {
 }
 
 export interface ClientPlayer {
-    id: string;
+    playerid: string;
     health: number;
     position: Position;
     color: Color;

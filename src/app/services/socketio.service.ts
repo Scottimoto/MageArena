@@ -8,7 +8,7 @@ import { GameState, Player, ClientPlayer, Position } from './../../../server/mod
 @Injectable()
 export class SocketioService {
 
-  private url = 'http://192.168.0.85:4300';  
+  private url = 'http://localhost:4300';  
   private socket: any;
 
   private gameStateSync: Subject<GameState> = new Subject<GameState>();
@@ -26,7 +26,9 @@ export class SocketioService {
 
   constructor() {
     // this.socket:  = io (this.url);
-    this.socket = io(this.url);
+    console.log("CONNECTING TO SOCKET");
+    // this.socket = io(this.url);
+    this.socket = io.connect(this.url);
   }
 
   public beginListeningForGameStateSyncs() {
@@ -58,7 +60,7 @@ export class SocketioService {
   }
 
   public addPlayer() {
-    this.socket = io.connect(this.url);
+    
     // io.connect();
     this.socket.on('newplayer', (data: ClientPlayer) => {
       //Game.addNewPlayer(data.id,data.x,data.y);

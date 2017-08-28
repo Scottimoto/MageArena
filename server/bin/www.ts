@@ -8,6 +8,7 @@ import * as http from "http";
 import { app } from "../app";
 import { serverPort } from "../config";
 import * as socketIo from "socket.io";
+import * as _ from "lodash";
 import { Position, Player, ClientPlayer } from "../models/game-sync-models";
 import { Color } from 'excalibur';
 
@@ -35,25 +36,38 @@ server.listen(port);
 server.on("error", onError);
 server.on("listening", onListening);
 
+var allPlayers: ClientPlayer[] = [];
 
 
 var startingPositions: Position[] = [{x: -100, y: 0}, {x: 100, y: 0}, {x: 0, y: -100},{x: 0, y: 100}];
 var startingColors: Color[] = [Color.Red, Color.Blue, Color.Green, Color.Yellow];
+var availableStarts: {position: Position, color: Color}[] = [];
+
+for (let i = 0; i < 4; i++) {
+  availableStarts.push({position: startingPositions[i], color: startingColors[i]});
+}
+
+console.log("Available starts: " + availableStarts);
+
 
 io.on('connect', (socket: SocketIO.Socket | any) => {
   // allClients[socket.id].socket = socket;
   // console.log('Connected client on port %s.', this.port);
   socket.on('newplayer', () => {
-    if (getAllPlayers().length == 4) {
+    if (allPlayers.length == 4) {
       socket.emit('newplayer', null);
-      socket.disconnect();
+      // socket.disconnect();
     }
-    io.sockets.connected[socket.id].player = createPlayer(socket);
+    var newPlayer = createPlayer(socket);
+    allPlayers.push(newPlayer);
+    // io.sockets.connected[socket.id].player = socket.player;
+    console.log("Player Created: " + newPlayer);
     // console.log('[server](message): %s', JSON.stringify(m));
-    socket.emit('newplayer', socket.player);
+    socket.emit('newplayer', newPlayer);
     socket.emit("player-joined", getAllEnemyPlayers(socket));
-    socket.broadcast.emit("player-joined", [socket.player]);
-    console.log("Player Joined: " + socket.id + ", Players Remaining: " + getAllPlayers().length);
+    socket.broadcast.emit("player-joined", [newPlayer]);
+    console.log("Player Joined: " + newPlayer.playerid + ", Players Remaining: " + allPlayers.length);
+    console.log("Available starts: " + availableStarts);
   });
 
   
@@ -65,38 +79,68 @@ io.on('connect', (socket: SocketIO.Socket | any) => {
     // newPlayerID++;
   });
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', function () {
+    console.log("DISCONNECT START");
+    console.log("NUMBER OF PLAYERS BEFORE: " + allPlayers.length);
+
+
+
     // delete allClients[socket.id];
-    io.emit('player-left', socket.id);
-    console.log("Player Left: " + socket.id + ", Players Remaining: " + getAllPlayers().length);
+    
+    console.log("WTF: " + socket.id);
+
+
+
+    var disconnectedPlayer = getPlayer(socket.id);
+    if (disconnectedPlayer != null) {
+      socket.broadcast.emit('player-left', disconnectedPlayer.playerid);
+      removePlayer(disconnectedPlayer.playerid);
+      console.log("Player Left: " + disconnectedPlayer.playerid + ", Players Remaining: " + allPlayers.length);
+      
+      availableStarts.push({position: disconnectedPlayer.position, color: disconnectedPlayer.color});
+      console.log("Available starts: " + availableStarts);
+    } else {
+      console.log("INVALID DISCONNECTED!!!!!!!!!!!!!!!!!");
+    }
+    
+    
+
+    
+    console.log("NUMBER OF PLAYERS AFTER: " + allPlayers.length);
+    console.log("DISCONNECT END");
   });
 });
 
-function getAllEnemyPlayers(socket: SocketIO.Socket){
-  var players = [];
-  Object.keys(io.sockets.connected).forEach(function(socketID){
-      var player = io.sockets.connected[socketID].player;
-      if(player && player.id != socket.id) players.push(player);
-  });
-  return players;
+function removePlayer(id: string) {
+  _.remove(allPlayers, (player) => { return player.playerid == id; });
 }
 
-function getAllPlayers(){
-  var players = [];
-  Object.keys(io.sockets.connected).forEach(function(socketID){
-      var player = io.sockets.connected[socketID].player;
-      if(player) players.push(player);
-  });
-  return players;
+function getPlayer(id: string): ClientPlayer {
+  return _.find(allPlayers, {playerid: id});
 }
+
+function getAllEnemyPlayers(socket: SocketIO.Socket) {
+  return _.filter(allPlayers, (player) => { return player.playerid != socket.id});
+}
+
+// function getAllPlayers(){
+//   var players = [];
+//   Object.keys(io.sockets.connected).forEach(function(socketID){
+//       var player = io.sockets.connected[socketID].player;
+//       if(player) players.push(player);
+//   });
+//   return players;
+// }
 
 function createPlayer(socket: SocketIO.Socket): ClientPlayer {
+  var nextAvailableStart = availableStarts[0];
+  availableStarts.splice(0, 1);
   var newPlayer: ClientPlayer = {
-    id: socket.id,
+    playerid: socket.id,
     order: Object.keys(io.sockets.connected).length,
     health: 100,
-    position: startingPositions[getAllPlayers().length],
-    color: startingColors[getAllPlayers().length]
+    position: nextAvailableStart.position,
+    color: nextAvailableStart.color
   };
   return newPlayer;
 }
